@@ -1,0 +1,4 @@
+github.com/hadihammurabi/go-rabbitmq v0.0.0-20210717115012-c29881e50a18 h1:KR8DLEW/1Ns2/ThtIiSdkqqC8D0IkA8tLDflMvsLPag=
+github.com/hadihammurabi/go-rabbitmq v0.0.0-20210717115012-c29881e50a18/go.mod h1:cLoH16MWqgL1b9ZyGQBzJNha1gslQ50LILsfRXCVAcE=
+github.com/streadway/amqp v1.0.0 h1:kuuDrUJFZL1QYL9hUNuCxNObNzB0bV/ZG5jV3RWAQgo=
+github.com/streadway/amqp v1.0.0/go.mod h1:AZpEONHx3DKn8O/DFsRAY58/XVQiIPMTMB1SddzLXVw=

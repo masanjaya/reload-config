@@ -30,7 +30,7 @@ func main() {
 	fmt.Println("Publish to MQ")
 	go startRabbitMqPublisher()
 
-	c := make(chan os.Signal)
+	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGINT)
 	<-c
 	fmt.Println("Goodbye")

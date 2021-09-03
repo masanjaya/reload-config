@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -14,26 +15,40 @@ import (
 )
 
 // channel for reset signal (don't care for the value)
-var reset chan bool
+var reset, stop chan bool
+
+// WG
+var wg sync.WaitGroup
 
 func main() {
 
 	// create reset channel
 	reset = make(chan bool)
+	stop = make(chan bool)
 
-	fmt.Println("Starting Web Server")
+	log.Println("Starting Web Server")
 	go startHttpServer()
 
-	fmt.Println("Subscribe to MQ")
+	log.Println("Subscribe to MQ")
+	wg.Add(1)
 	go startRabbitMqSubscriber()
 
-	fmt.Println("Publish to MQ")
+	log.Println("Publish to MQ")
 	go startRabbitMqPublisher()
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGINT)
 	<-c
-	fmt.Println("Goodbye")
+
+	// sending signal to channel stop (received by subscriber and publisher)
+	log.Println("receiving SIGINT, sending stop signal to subsriber (don't care for publisher and HttpServer)")
+	stop <- true
+
+	log.Println("waiting for subscriber to stop")
+	wg.Wait()
+
+	log.Println("subscriber has stop")
+	log.Println("Goodbye")
 	os.Exit(0)
 }
 
@@ -54,6 +69,7 @@ func startHttpServer() {
 		}
 		// send reset signal
 		reset <- true
+		log.Println("reset signal sent")
 	})
 	log.Fatal(http.ListenAndServe(":9090", nil))
 }
@@ -65,7 +81,6 @@ func startRabbitMqSubscriber() {
 	if err != nil {
 		log.Fatal("connecting to rabbitmq failed => ", err)
 	}
-	defer mq.Close()
 
 	_, err = mq.QueueDeclare(rabbitmq.NewQueueOptions().SetName("hello"))
 	if err != nil {
@@ -80,8 +95,21 @@ func startRabbitMqSubscriber() {
 
 	// show the message
 	for msg := range msgs {
-		fmt.Println("message:", string(msg.Body))
-		msg.Ack(false)
+		select {
+		case <-stop:
+			log.Println("closing connection to broker")
+			mq.Close()
+			wg.Done()
+			return
+		default:
+			log.Println("subscriber processing", string(msg.Body), "=== start ===")
+			for i := 1; i <= 5; i++ {
+				log.Println("subscriber processing", string(msg.Body), "phase", i)
+				time.Sleep(time.Second)
+			}
+			log.Println("subscriber processing", string(msg.Body), ">>>>> finish <<<<<")
+			msg.Ack(false)
+		}
 	}
 }
 
@@ -118,6 +146,7 @@ func startRabbitMqPublisher() {
 		// do normal publishing
 		default:
 			i++
+			log.Println("publisher sending", i)
 			err = mq.Publish(
 				rabbitmq.NewPublishOptions().
 					SetExchange("hello").

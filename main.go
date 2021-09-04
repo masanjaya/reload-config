@@ -15,27 +15,27 @@ import (
 	"github.com/streadway/amqp"
 )
 
-// channel for reset and stop signal (don't care for the value)
+// channel for reset, stop and shutdown signal
 var reset, stop, shutdown chan bool
 
-// used to wait for subscriber to finish
+// used to wait for subscriber, publisher and httpserver to finish
 var wg sync.WaitGroup
 
 func main() {
 
-	// create reset channel
+	// create channels
 	reset = make(chan bool)
 	stop = make(chan bool, 3)
 	shutdown = make(chan bool)
 
-	log.Println("Starting Web Server")
+	log.Println("Starting Htpp Server")
 	go startHttpServer()
 
-	log.Println("Subscribe to MQ")
+	log.Println("Starting Subscriber")
 	wg.Add(3)
 	go startRabbitMqSubscriber()
 
-	log.Println("Publish to MQ")
+	log.Println("Starting Publisher")
 	go startRabbitMqPublisher()
 
 	c := make(chan os.Signal, 1)
@@ -47,14 +47,13 @@ func main() {
 		log.Println("terminate request from http request")
 	}
 
-	// sending stop to all (subscriber, publisher and http server)
-	log.Println("stopping subsriber, publisher and HttpServer")
+	// sending stop to all (Subscriber, Publisher and HttpServer)
+	log.Println("stopping Subscriber, Publisher and HttpServer")
 	for i := 0; i < 3; i++ {
 		stop <- true
 	}
 	wg.Wait()
-	log.Println("subsriber, publisher and HttpServer all stop")
-	log.Println("Goodbye")
+	log.Println("Subscriber, Publisher and HttpServer all stop, Goodbye")
 	os.Exit(0)
 }
 
@@ -64,19 +63,19 @@ func startHttpServer() {
 
 	// handle path /
 	http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
-		_, err := rw.Write([]byte("<html>click <a href='/reset'>reset</a> to reset the counter</html>"))
+		_, err := rw.Write([]byte("<html>click <a href='/reset'>reset</a> to reset Publisher</html>"))
 		if err != nil {
 			log.Fatal(err)
 		}
 	})
 	// handle path /reset
 	http.HandleFunc("/reset", func(rw http.ResponseWriter, r *http.Request) {
-		_, err := rw.Write([]byte("<html>Counter has been Resetet<br/><a href='/'>back to main page</a></html>"))
+		_, err := rw.Write([]byte("<html>Publisher has been reset<br/><a href='/'>back to main page</a></html>"))
 		if err != nil {
 			log.Fatal(err)
 		}
 		// send reset signal
-		log.Println("got request to reset publisher")
+		log.Println("got http request to reset publisher")
 		reset <- true
 	})
 	// handle path /stop
@@ -86,7 +85,7 @@ func startHttpServer() {
 			log.Fatal(err)
 		}
 		// send shutdown signal
-		log.Println("got request to shutdown the app")
+		log.Println("got http request to shutdown the app")
 		shutdown <- true
 	})
 
@@ -97,17 +96,17 @@ func startHttpServer() {
 	// monitor stop signal
 	go func() {
 		<-stop
-		log.Println("Http Server is shutting down")
+		log.Println("HttpServer is shutting down")
 		httpServer.Shutdown(context.Background())
 	}()
 
-	log.Println("Http Server is starting")
+	log.Println("HttpServer is starting")
 	err := httpServer.ListenAndServe()
 	if err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
 
-	log.Println("Http Server is shutdown")
+	log.Println("HttpServer is shutdown")
 }
 
 // startRabbitMqSubscriber subscribes to a local rabbitmq
@@ -118,14 +117,14 @@ func startRabbitMqSubscriber() {
 	log.Println("subscriber establishing connection to broker")
 	mq, err := rabbitmq.NewMQ("amqp://guest:guest@localhost:5672/")
 	if err != nil {
-		log.Fatal("subscriber connecting to rabbitmq failed => ", err)
+		log.Fatal("subscriber connecting to rabbitmq failed", err)
 	}
 	defer func() {
 		log.Println("subscriber closing connection to broker")
 		mq.Close()
 	}()
 
-	_, err = mq.QueueDeclare(rabbitmq.NewQueueOptions().SetName("hello"))
+	_, err = mq.QueueDeclare(rabbitmq.NewQueueOptions().SetName("test"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -162,17 +161,17 @@ func startRabbitMqPublisher() {
 	}
 	defer mq.Close()
 
-	_, err = mq.QueueDeclare(rabbitmq.NewQueueOptions().SetName("hello"))
+	_, err = mq.QueueDeclare(rabbitmq.NewQueueOptions().SetName("test"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = mq.ExchangeDeclare(rabbitmq.NewExchangeOptions().SetName("hello").SetType(rabbitmq.ExchangeTypeFanout))
+	err = mq.ExchangeDeclare(rabbitmq.NewExchangeOptions().SetName("test").SetType(rabbitmq.ExchangeTypeFanout))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = mq.QueueBind(rabbitmq.NewQueueBindOptions().SetName("hello").SetExchange("hello"))
+	err = mq.QueueBind(rabbitmq.NewQueueBindOptions().SetName("test").SetExchange("test"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -191,7 +190,7 @@ func startRabbitMqPublisher() {
 			log.Println("publisher sending", i)
 			err = mq.Publish(
 				rabbitmq.NewPublishOptions().
-					SetExchange("hello").
+					SetExchange("test").
 					SetMessage(amqp.Publishing{
 						ContentType: "text/plain",
 						Body:        []byte(fmt.Sprintf("%d", i)),

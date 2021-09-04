@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,23 +15,24 @@ import (
 	"github.com/streadway/amqp"
 )
 
-// channel for reset signal (don't care for the value)
-var reset, stop chan bool
+// channel for reset and stop signal (don't care for the value)
+var reset, stop, shutdown chan bool
 
-// WG
+// used to wait for subscriber to finish
 var wg sync.WaitGroup
 
 func main() {
 
 	// create reset channel
 	reset = make(chan bool)
-	stop = make(chan bool)
+	stop = make(chan bool, 3)
+	shutdown = make(chan bool)
 
 	log.Println("Starting Web Server")
 	go startHttpServer()
 
 	log.Println("Subscribe to MQ")
-	wg.Add(1)
+	wg.Add(3)
 	go startRabbitMqSubscriber()
 
 	log.Println("Publish to MQ")
@@ -38,22 +40,28 @@ func main() {
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGINT)
-	<-c
+	select {
+	case <-c:
+		log.Println("terminate request from console")
+	case <-shutdown:
+		log.Println("terminate request from http request")
+	}
 
-	// sending signal to channel stop (received by subscriber and publisher)
-	log.Println("receiving SIGINT, sending stop signal to subsriber (don't care for publisher and HttpServer)")
-	stop <- true
-
-	log.Println("waiting for subscriber to stop")
+	// sending stop to all (subscriber, publisher and http server)
+	log.Println("stopping subsriber, publisher and HttpServer")
+	for i := 0; i < 3; i++ {
+		stop <- true
+	}
 	wg.Wait()
-
-	log.Println("subscriber has stop")
+	log.Println("subsriber, publisher and HttpServer all stop")
 	log.Println("Goodbye")
 	os.Exit(0)
 }
 
 // startHttpServer starts an HTTP Server on port 9090, handle for path / and /reset
 func startHttpServer() {
+	defer wg.Done()
+
 	// handle path /
 	http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
 		_, err := rw.Write([]byte("<html>click <a href='/reset'>reset</a> to reset the counter</html>"))
@@ -68,19 +76,54 @@ func startHttpServer() {
 			log.Fatal(err)
 		}
 		// send reset signal
+		log.Println("got request to reset publisher")
 		reset <- true
-		log.Println("reset signal sent")
 	})
-	log.Fatal(http.ListenAndServe(":9090", nil))
+	// handle path /stop
+	http.HandleFunc("/shutdown", func(rw http.ResponseWriter, r *http.Request) {
+		_, err := rw.Write([]byte("<html>app is about to shutdown</html>"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		// send shutdown signal
+		log.Println("got request to shutdown the app")
+		shutdown <- true
+	})
+
+	httpServer := http.Server{
+		Addr: ":9090",
+	}
+
+	// monitor stop signal
+	go func() {
+		<-stop
+		log.Println("Http Server is shutting down")
+		httpServer.Shutdown(context.Background())
+	}()
+
+	log.Println("Http Server is starting")
+	err := httpServer.ListenAndServe()
+	if err != http.ErrServerClosed {
+		log.Fatal(err)
+	}
+
+	log.Println("Http Server is shutdown")
 }
 
 // startRabbitMqSubscriber subscribes to a local rabbitmq
 // use docker for local rabbitmq installation
 func startRabbitMqSubscriber() {
+	defer wg.Done()
+
+	log.Println("subscriber establishing connection to broker")
 	mq, err := rabbitmq.NewMQ("amqp://guest:guest@localhost:5672/")
 	if err != nil {
-		log.Fatal("connecting to rabbitmq failed => ", err)
+		log.Fatal("subscriber connecting to rabbitmq failed => ", err)
 	}
+	defer func() {
+		log.Println("subscriber closing connection to broker")
+		mq.Close()
+	}()
 
 	_, err = mq.QueueDeclare(rabbitmq.NewQueueOptions().SetName("hello"))
 	if err != nil {
@@ -97,9 +140,6 @@ func startRabbitMqSubscriber() {
 	for msg := range msgs {
 		select {
 		case <-stop:
-			log.Println("closing connection to broker")
-			mq.Close()
-			wg.Done()
 			return
 		default:
 			log.Println("subscriber processing", string(msg.Body), "=== start ===")
@@ -114,6 +154,8 @@ func startRabbitMqSubscriber() {
 }
 
 func startRabbitMqPublisher() {
+	defer wg.Done()
+
 	mq, err := rabbitmq.NewMQ("amqp://guest:guest@localhost:5672/")
 	if err != nil {
 		log.Fatal(err)
@@ -140,11 +182,11 @@ func startRabbitMqPublisher() {
 
 	for {
 		select {
-		// reset signal received
-		case <-reset:
+		case <-stop: // stop signal received
+			return
+		case <-reset: // reset signal received
 			i = 0
-		// do normal publishing
-		default:
+		default: // do normal publishing
 			i++
 			log.Println("publisher sending", i)
 			err = mq.Publish(

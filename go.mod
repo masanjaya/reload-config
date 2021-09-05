@@ -1,4 +1,4 @@
-module myapp
+module reload-config
 
 go 1.16
 

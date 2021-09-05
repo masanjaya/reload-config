@@ -2,23 +2,24 @@ package internal
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
 )
 
-// startHttpServer starts an HTTP Server on port 9090, handle for path / and /reset
-func StartHttpServer(wg *sync.WaitGroup, stop, reset, shutdown chan bool) {
+// StartHttpServer starts an HTTP Server on port 9090, handle for path / and /reset and /shutdown
+func StartHttpServer(port int, wg *sync.WaitGroup, stop, reset, shutdown chan bool) {
 	defer wg.Done()
 
-	// handle path /
+	// handle /
 	http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
 		_, err := rw.Write([]byte("<html>click <a href='/reset'>reset</a> to reset Publisher</html>"))
 		if err != nil {
 			log.Fatal(err)
 		}
 	})
-	// handle path /reset
+	// handle /reset
 	http.HandleFunc("/reset", func(rw http.ResponseWriter, r *http.Request) {
 		_, err := rw.Write([]byte("<html>Publisher has been reset<br/><a href='/'>back to main page</a></html>"))
 		if err != nil {
@@ -28,7 +29,7 @@ func StartHttpServer(wg *sync.WaitGroup, stop, reset, shutdown chan bool) {
 		log.Println("got http request to reset publisher")
 		reset <- true
 	})
-	// handle path /stop
+	// handle /shutdown
 	http.HandleFunc("/shutdown", func(rw http.ResponseWriter, r *http.Request) {
 		_, err := rw.Write([]byte("<html>app is about to shutdown</html>"))
 		if err != nil {
@@ -40,7 +41,7 @@ func StartHttpServer(wg *sync.WaitGroup, stop, reset, shutdown chan bool) {
 	})
 
 	httpServer := http.Server{
-		Addr: ":9090",
+		Addr: fmt.Sprintf(":%d", port),
 	}
 
 	// monitor stop signal
@@ -50,6 +51,7 @@ func StartHttpServer(wg *sync.WaitGroup, stop, reset, shutdown chan bool) {
 		httpServer.Shutdown(context.Background())
 	}()
 
+	// start serving
 	log.Println("HttpServer is starting")
 	err := httpServer.ListenAndServe()
 	if err != http.ErrServerClosed {

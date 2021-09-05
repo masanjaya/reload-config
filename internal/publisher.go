@@ -10,6 +10,8 @@ import (
 	"github.com/streadway/amqp"
 )
 
+// StartRabbitMqPublisher publish to a local rabbitmq
+// use docker for local rabbitmq installation
 func StartRabbitMqPublisher(wg *sync.WaitGroup, stop, reset chan bool) {
 	defer wg.Done()
 

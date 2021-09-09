@@ -21,7 +21,7 @@ func main() {
 	wg.Add(3)
 
 	log.Println("Starting Htpp Server")
-	go internal.StartHttpServer(&wg, stop, reset, shutdown)
+	go internal.StartHttpServer(9090, &wg, stop, reset, shutdown)
 
 	log.Println("Starting Subscriber")
 	go internal.StartRabbitMqSubscriber(&wg, stop)

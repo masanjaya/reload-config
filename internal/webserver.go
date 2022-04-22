@@ -15,6 +15,28 @@ import (
 func StartHttpServer(port int, wg *sync.WaitGroup, stop, reset, shutdown chan bool) {
 	defer wg.Done()
 
+	// handle /get secret
+	http.HandleFunc("/v1/secret/data/aestest1", func(rw http.ResponseWriter, r *http.Request) {
+		var response3 secretResponse
+		response3.Data.Metadata.DeletionTime = "never"
+		response3.Data.Metadata.Destroyed = false
+		response3.Data.Metadata.Version = 1
+		response3.Data.Metadata.CreatedTime = time.Now()
+		response3.Data.Data = map[string]string{"ctrkey": "yshWyt25sf30Uhdj", "bitkey": "128"}
+
+		returnbyte, err := json.Marshal(response3)
+		if err != nil {
+			log.Fatal(err)
+			returnbyte = []byte(`{"status":"error"}`)
+		}
+
+		_, err = rw.Write(returnbyte)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	})
+
 	http.HandleFunc("/v1/secret/metadata/pilot/certs", func(rw http.ResponseWriter, r *http.Request) {
 		var response3 listResponse
 		response3.RequestId = "request_id_1"

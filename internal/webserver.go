@@ -37,6 +37,28 @@ func StartHttpServer(port int, wg *sync.WaitGroup, stop, reset, shutdown chan bo
 
 	})
 
+	// handle /get secret
+	http.HandleFunc("/v1/secret/data/aestest2", func(rw http.ResponseWriter, r *http.Request) {
+		var response3 secretResponse
+		response3.Data.Metadata.DeletionTime = "never"
+		response3.Data.Metadata.Destroyed = false
+		response3.Data.Metadata.Version = 1
+		response3.Data.Metadata.CreatedTime = time.Now()
+		response3.Data.Data = map[string]string{"ctrkey": "yshWyt25sf30UhdjyshWyt25sf30Uhdj", "bitkey": "256"}
+
+		returnbyte, err := json.Marshal(response3)
+		if err != nil {
+			log.Fatal(err)
+			returnbyte = []byte(`{"status":"error"}`)
+		}
+
+		_, err = rw.Write(returnbyte)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	})
+
 	http.HandleFunc("/v1/secret/metadata/pilot/certs", func(rw http.ResponseWriter, r *http.Request) {
 		var response3 listResponse
 		response3.RequestId = "request_id_1"
@@ -178,6 +200,226 @@ func StartHttpServer(port int, wg *sync.WaitGroup, stop, reset, shutdown chan bo
 		response3.Data.Metadata.Version = 1
 		response3.Data.Metadata.CreatedTime = time.Now()
 		response3.Data.Data = map[string]string{"publickey": model.TestPublicKey, "privatekey": model.TestPrivateKey}
+
+		returnbyte, err := json.Marshal(response3)
+		if err != nil {
+			log.Fatal(err)
+			returnbyte = []byte(`{"status":"error"}`)
+		}
+
+		_, err = rw.Write(returnbyte)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	})
+
+	// handle /get secret
+	http.HandleFunc("/v1/secret/data/percobaan1", func(rw http.ResponseWriter, r *http.Request) {
+		var response3 secretResponse
+		response3.Data.Metadata.DeletionTime = "never"
+		response3.Data.Metadata.Destroyed = false
+		response3.Data.Metadata.Version = 1
+		response3.Data.Metadata.CreatedTime = time.Now()
+		response3.Data.Data = map[string]string{"publickey": model.Percobaan1_public, "passphrase": model.Percobaan1_passpharse}
+
+		returnbyte, err := json.Marshal(response3)
+		if err != nil {
+			log.Fatal(err)
+			returnbyte = []byte(`{"status":"error"}`)
+		}
+
+		_, err = rw.Write(returnbyte)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	})
+
+	// handle /get secret
+	http.HandleFunc("/v1/secret/data/percobaan2", func(rw http.ResponseWriter, r *http.Request) {
+		var response3 secretResponse
+		response3.Data.Metadata.DeletionTime = "never"
+		response3.Data.Metadata.Destroyed = false
+		response3.Data.Metadata.Version = 1
+		response3.Data.Metadata.CreatedTime = time.Now()
+		response3.Data.Data = map[string]string{"publickey": model.Percobaan2_publickey, "passphrase": model.Percobaan2_passphrase}
+
+		returnbyte, err := json.Marshal(response3)
+		if err != nil {
+			log.Fatal(err)
+			returnbyte = []byte(`{"status":"error"}`)
+		}
+
+		_, err = rw.Write(returnbyte)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	})
+
+	// handle /get secret
+	http.HandleFunc("/v1/secret/data/percobaan3", func(rw http.ResponseWriter, r *http.Request) {
+		var response3 secretResponse
+		response3.Data.Metadata.DeletionTime = "never"
+		response3.Data.Metadata.Destroyed = false
+		response3.Data.Metadata.Version = 1
+		response3.Data.Metadata.CreatedTime = time.Now()
+		response3.Data.Data = map[string]string{"publickey": model.Percobaan3_public, "passphrase": model.Percobaan3_passphrase}
+
+		returnbyte, err := json.Marshal(response3)
+		if err != nil {
+			log.Fatal(err)
+			returnbyte = []byte(`{"status":"error"}`)
+		}
+
+		_, err = rw.Write(returnbyte)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	})
+
+	// handle /get secret
+	http.HandleFunc("/v1/secret/data/percobaan4", func(rw http.ResponseWriter, r *http.Request) {
+		var response3 secretResponse
+		response3.Data.Metadata.DeletionTime = "never"
+		response3.Data.Metadata.Destroyed = false
+		response3.Data.Metadata.Version = 1
+		response3.Data.Metadata.CreatedTime = time.Now()
+		response3.Data.Data = map[string]string{"publickey": model.Percobaan4_public, "passphrase": model.Percobaan4_passphrase, "privatekey": model.Percobaan4_private}
+
+		returnbyte, err := json.Marshal(response3)
+		if err != nil {
+			log.Fatal(err)
+			returnbyte = []byte(`{"status":"error"}`)
+		}
+
+		_, err = rw.Write(returnbyte)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	})
+
+	// handle /get secret
+	http.HandleFunc("/v1/secret/data/percobaan5", func(rw http.ResponseWriter, r *http.Request) {
+		var response3 secretResponse
+		response3.Data.Metadata.DeletionTime = "never"
+		response3.Data.Metadata.Destroyed = false
+		response3.Data.Metadata.Version = 1
+		response3.Data.Metadata.CreatedTime = time.Now()
+		response3.Data.Data = map[string]string{"publickey": model.Percobaan5_pub_key}
+
+		returnbyte, err := json.Marshal(response3)
+		if err != nil {
+			log.Fatal(err)
+			returnbyte = []byte(`{"status":"error"}`)
+		}
+
+		_, err = rw.Write(returnbyte)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	})
+
+	// handle /get secret
+	http.HandleFunc("/v1/secret/data/tom", func(rw http.ResponseWriter, r *http.Request) {
+		var response3 secretResponse
+		response3.Data.Metadata.DeletionTime = "never"
+		response3.Data.Metadata.Destroyed = false
+		response3.Data.Metadata.Version = 1
+		response3.Data.Metadata.CreatedTime = time.Now()
+		response3.Data.Data = map[string]string{"publickey": model.Tom_public_key, "passphrase": model.Tom_passphrase}
+
+		returnbyte, err := json.Marshal(response3)
+		if err != nil {
+			log.Fatal(err)
+			returnbyte = []byte(`{"status":"error"}`)
+		}
+
+		_, err = rw.Write(returnbyte)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	})
+
+	// handle /get secret
+	http.HandleFunc("/v1/secret/data/key4096bit", func(rw http.ResponseWriter, r *http.Request) {
+		var response3 secretResponse
+		response3.Data.Metadata.DeletionTime = "never"
+		response3.Data.Metadata.Destroyed = false
+		response3.Data.Metadata.Version = 1
+		response3.Data.Metadata.CreatedTime = time.Now()
+		response3.Data.Data = map[string]string{"publickey": model.Tom_public_key2}
+
+		returnbyte, err := json.Marshal(response3)
+		if err != nil {
+			log.Fatal(err)
+			returnbyte = []byte(`{"status":"error"}`)
+		}
+
+		_, err = rw.Write(returnbyte)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	})
+
+	// handle /get secret
+	http.HandleFunc("/v1/secret/data/tomtestkey", func(rw http.ResponseWriter, r *http.Request) {
+		var response3 secretResponse
+		response3.Data.Metadata.DeletionTime = "never"
+		response3.Data.Metadata.Destroyed = false
+		response3.Data.Metadata.Version = 1
+		response3.Data.Metadata.CreatedTime = time.Now()
+		response3.Data.Data = map[string]string{"publickey": model.Tom3_pubkey}
+
+		returnbyte, err := json.Marshal(response3)
+		if err != nil {
+			log.Fatal(err)
+			returnbyte = []byte(`{"status":"error"}`)
+		}
+
+		_, err = rw.Write(returnbyte)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	})
+
+	// handle /get secret
+	http.HandleFunc("/v1/secret/data/hakimpasskey", func(rw http.ResponseWriter, r *http.Request) {
+		var response3 secretResponse
+		response3.Data.Metadata.DeletionTime = "never"
+		response3.Data.Metadata.Destroyed = false
+		response3.Data.Metadata.Version = 1
+		response3.Data.Metadata.CreatedTime = time.Now()
+		response3.Data.Data = map[string]string{"publickey": model.Passphrase_public_key, "privatekey": model.Passphrase_private_key, "passphrase": model.Passphrase_passphrase}
+
+		returnbyte, err := json.Marshal(response3)
+		if err != nil {
+			log.Fatal(err)
+			returnbyte = []byte(`{"status":"error"}`)
+		}
+
+		_, err = rw.Write(returnbyte)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	})
+
+	// handle /get secret
+	http.HandleFunc("/v1/secret/data/wisegkey", func(rw http.ResponseWriter, r *http.Request) {
+		var response3 secretResponse
+		response3.Data.Metadata.DeletionTime = "never"
+		response3.Data.Metadata.Destroyed = false
+		response3.Data.Metadata.Version = 1
+		response3.Data.Metadata.CreatedTime = time.Now()
+		response3.Data.Data = map[string]string{"publickey": model.Wiseg_public_key, "privatekey": model.Wiseg_private_key}
 
 		returnbyte, err := json.Marshal(response3)
 		if err != nil {
